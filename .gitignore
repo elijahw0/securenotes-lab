@@ -1,0 +1,15 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Secrets — never commit real values
+.env
+
+# Database files
+*.db
+
+# macOS
+.DS_Store
