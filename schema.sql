@@ -6,3 +6,12 @@ CREATE TABLE users(
 	role		TEXT NOT NULL DEFAULT 'user',
 	created_at	TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE notes(
+	id		INTEGER PRIMARY KEY,
+	title		TEXT,
+	body		TEXT NOT NULL,
+	owner_id 	INTEGER NOT NULL,
+	created_at	TEXT NOT NULL DEFAULT (datetime('now')),
+	FOREIGN KEY (owner_id) REFERENCES users(id)
+);
