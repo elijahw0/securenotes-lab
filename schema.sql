@@ -36,5 +36,5 @@ CREATE TABLE security_events(
 	details		TEXT,
 	endpoint	TEXT,
 	source_ip	TEXT,
-	created_at	TEXT DEFAULT (datetime('now'))
+	created_at	TEXT NOT NULL DEFAULT (datetime('now'))
 );
