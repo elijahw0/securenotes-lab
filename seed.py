@@ -4,6 +4,7 @@ from db import get_connection
 
 
 db=get_connection()
+db.execute('delete from tokens')
 db.execute("delete from notes")
 db.execute("delete from users")
 

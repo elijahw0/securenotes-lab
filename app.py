@@ -1,11 +1,14 @@
 from flask import Flask, request
 import bcrypt
 import sqlite3
-from db import get_connection
-
+from db import get_connection, get_user_by_username, get_user_from_token
+import secrets
+from datetime import datetime, timedelta, timezone
 
 #creating the app. flask can now see this script and act on it
 app = Flask(__name__)
+dummypass= 'password'
+DUMMY_HASH = bcrypt.hashpw(dummypass.encode('utf-8'), bcrypt.gensalt()).decode("utf-8")
 
 
 #capturing http requests that go to the /health endpoint and running health function
@@ -45,7 +48,47 @@ def register():
     #returns json that a user has been created with their respective id and proper status code
     return {'message': "user created", "id": new_id}, 201
 
+@app.route("/api/login", methods=['POST'])
+def login():
+    data = request.get_json()
+    if not data or not data.get('username') or not data.get('password'):
+        return {"error": "must include username and password"}, 400
 
+    #stores inputted username in variable to find it in database
+    username = data['username']
+    password = data["password"]
+    user = get_user_by_username(username)
+    #checks to see if username exists
+    if not user:
+        #dummyhash here so program still takes the same amount of time despite each case so attackers cannot enumerate valid user accounts
+        #bcrypt takes a noticeable amount of time to run so for it to run when there is a valid user account but not when there is not valid user account
+        #is a telling sign to attackers that this user account exists but the password is wrong
+        bcrypt.checkpw(password.encode('utf-8'), DUMMY_HASH.encode('utf-8'))
+        return {"error": "invalid credentials"}, 401
+    
+    
+    #if this returns true 
+    if bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+        token = secrets.token_hex(32)  #64 char randomm hex string
+        expires_at= (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat()
+        db = get_connection()
+        db.execute("insert into tokens (token, user_id, expires_at) values (?,?,?)", (token, user["id"], expires_at,))
+        db.commit()
+        db.close()
+        return {"token": token}, 200
+    else:
+        return{"error": "invalid credentials"}, 401
+
+@app.route("/api/profile", methods=["GET"])
+def profile():
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied"}, 401
+    return {"id": user["id"], "username": user["username"], "role": user["role"]}, 200
 
 
 #essential to make sure all file code only gets executed when you specifically execute it
