@@ -5,7 +5,7 @@ venv/
 __pycache__/
 *.pyc
 
-# Secrets — never commit real values
+# Secrets 
 .env
 
 # Database files
