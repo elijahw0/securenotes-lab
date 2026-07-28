@@ -109,6 +109,30 @@ def getnotes():
     return {"notes": output}, 200
     
 
+@app.route('/api/notes', methods=['POST'])
+def createnotes():
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
+    db = get_connection()
+    #if json isnt properly parsed it will assign None to data
+    data = request.get_json(silent=True)
+    if not data or not data.get('body'):
+            return {'error': 'note content required'}, 400
+    body = data.get('body')
+    owner_id = user["id"]
+    title = data.get('title')
+    cursor = db.execute("insert into notes (title,body,owner_id) values (?,?,?)", (title, body, owner_id))
+    db.commit()
+    new_id = cursor.lastrowid
+    db.close()
+    return {"message": "note created", "note_id": new_id, "title": title, "body": body}, 201
+
+
 
 
 
