@@ -16,6 +16,7 @@ for username, password, role in users:
 	userids[username] = cursor.lastrowid
 db.commit()
 db.execute("insert into notes(title,body,owner_id) values (?,?,?)", ('bob first note', 'hello i am bob, nice to meet you', userids['bob']))
+db.execute("insert into notes(title,body,owner_id) values (?,?,?)", ('bob second note', 'hello i am bob, nice to meet you', userids['bob']))
 db.execute("insert into notes(body,owner_id) values (?, ?)", ("i am the admin jake", userids['jake']))
 
 print("inserts complete")

@@ -90,6 +90,27 @@ def profile():
         return {"error": "permission denied"}, 401
     return {"id": user["id"], "username": user["username"], "role": user["role"]}, 200
 
+@app.route("/api/notes", methods=["GET"])
+def getnotes():
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
+    db = get_connection()
+    owner_id = user['id']
+    user_notes = db.execute("select * from notes where owner_id = ?", (owner_id,)).fetchall()
+    output = []
+    for note in user_notes:
+        output.append({"id": note["id"], "title": note["title"], "body": note["body"], "created_at": note["created_at"]})
+
+    return {"notes": output}, 200
+    
+
+
+
 
 #essential to make sure all file code only gets executed when you specifically execute it
 
