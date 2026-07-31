@@ -102,6 +102,7 @@ def getnotes():
     db = get_connection()
     owner_id = user['id']
     user_notes = db.execute("select * from notes where owner_id = ?", (owner_id,)).fetchall()
+    db.close()
     output = []
     for note in user_notes:
         output.append({"id": note["id"], "title": note["title"], "body": note["body"], "created_at": note["created_at"]})
@@ -131,6 +132,27 @@ def createnotes():
     new_id = cursor.lastrowid
     db.close()
     return {"message": "note created", "note_id": new_id, "title": title, "body": body}, 201
+
+@app.route("/api/notes/<int:note_id>", methods=["GET"])
+def getspecificnote(note_id):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
+    #after we verified this user exists, then check to see if they can access that specific note, if it exists, before returning it
+    owner_id = user["id"]
+    db = get_connection()
+    note = db.execute("select * from notes where id = ?", (note_id,)).fetchone()
+    db.close()
+    if note is None or note["owner_id"] != owner_id:
+        return {"error": "no note found"}, 404
+    else:
+        return {"message": "note retrieved", "note_id": note["id"], "note_title": note["title"], "note_body": note["body"], "creation_date": note["created_at"]}, 200
+    
+
 
 
 

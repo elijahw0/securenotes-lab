@@ -24,5 +24,6 @@ def get_user_from_token(token):
 	if expiration <= datetime.now(timezone.utc):
 		return None
 	user = db.execute("select * from users where id = ?", (token_row["user_id"],)).fetchone()
+	db.close()
 	return user
 	
