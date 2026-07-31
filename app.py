@@ -151,9 +151,47 @@ def getspecificnote(note_id):
         return {"error": "no note found"}, 404
     else:
         return {"message": "note retrieved", "note_id": note["id"], "note_title": note["title"], "note_body": note["body"], "creation_date": note["created_at"]}, 200
-    
 
 
+#endpoint to update a note. must validate user token that they are a vlaid user. Must check if the note number they passed belongs to them
+#if they own it, capture the edits they want and replace it. commit and close connection
+#uses patch behavior instead of true put. if they desire to only update one field, their existing other field remains
+@app.route("/api/notes/<int:note_id>", methods=["PUT"])
+def updatenote(note_id):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
+
+    owner_id = user["id"]
+    edits = request.get_json()
+    if not edits:
+        return {"error": "no fields provided to update"}, 400
+
+    db = get_connection()
+    # fetch the existing note
+    existing = db.execute(
+        "select * from notes where id = ? and owner_id = ?",
+        (note_id, owner_id),
+    ).fetchone()
+    if existing is None:
+        db.close()
+        return {"error": "no note found"}, 404
+
+    #use the client's value if they provided the key, else keep the existing value
+    new_title = edits["title"] if "title" in edits else existing["title"]
+    new_body = edits["body"] if "body" in edits else existing["body"]
+
+    db.execute(
+        "update notes set title = ?, body = ? where id = ? and owner_id = ?",
+        (new_title, new_body, note_id, owner_id),
+    )
+    db.commit()
+    db.close()
+    return {"message": "note updated"}, 200
 
 
 
