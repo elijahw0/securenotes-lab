@@ -15,6 +15,7 @@ def get_user_by_username(username):
 	#returns a tuple called row with that rows data
 	return row
 
+#handles complete token validation, existence and expiration, run everytime a token is handled
 def get_user_from_token(token):
 	db = get_connection()
 	token_row = db.execute("select * from tokens where token = ?", (token,)).fetchone()

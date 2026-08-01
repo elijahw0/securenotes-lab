@@ -214,7 +214,23 @@ def deletenote(note_id):
         return {"error": "note not found"}, 404
     return {"message": "note successfully deleted"}, 200
 
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
 
+    db = get_connection()
+    cursor = db.execute("delete from tokens where token = ?", (token,))
+    db.commit()
+    db.close()
+    if cursor.rowcount == 0:
+        return {"error": "logout failed"}, 400
+    return {"message": "logout successful"}, 200
 
 
 #essential to make sure all file code only gets executed when you specifically execute it
