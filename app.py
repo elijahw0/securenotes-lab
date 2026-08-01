@@ -78,6 +78,7 @@ def login():
         return {"token": token}, 200
     else:
         return{"error": "invalid credentials"}, 401
+    
 
 @app.route("/api/profile", methods=["GET"])
 def profile():
@@ -192,6 +193,26 @@ def updatenote(note_id):
     db.commit()
     db.close()
     return {"message": "note updated"}, 200
+
+@app.route("/api/notes/<int:note_id>", methods=["DELETE"])
+def deletenote(note_id):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
+    
+    owner_id = user["id"]
+    #check if the selected note exists, check if it belongs to them, delete note
+    db = get_connection()
+    cursor = db.execute("delete from notes where id = ? and owner_id = ?", (note_id, owner_id,))
+    db.commit()
+    db.close()
+    if cursor.rowcount == 0:
+        return {"error": "note not found"}, 404
+    return {"message": "note successfully deleted"}, 200
 
 
 
