@@ -240,26 +240,39 @@ def getusers():
         return {"error": "permission denied"}, 401
     token = auth_header.replace("Bearer ", "")
     user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
 
     if user["role"] != "admin":
         return {"error": "permission denied"}, 403
+
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
     
     db = get_connection()
     users = db.execute("select * from users").fetchall()
     db.close()
-    if not users:
-        return {"users": users}, 200
-    # 1 bob user 
-    # 2 alice user
-    # 3 jake admin 
     output = []
     for user in users:
         output.append({"username": user["username"], "id": user["id"], "role": user["role"], "created_at": user["created_at"]})
     return {"message": "success", "users": output}, 200
 
-
+@app.route("/api/users/<int:user_id>")
+def getuser(user_id):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
+    
+    db = get_connection()
+    selected_user = db.execute("select * from users where id = ?", (user_id,)).fetchone()
+    db.close()
+    if not selected_user:
+        return {"error": "user not found"},404
+    if user["role"] != "admin":
+        return {"error": "permission denied"},403
+    return {"username": selected_user["username"], "role": selected_user["role"], "id": selected_user["id"], "created_at": selected_user["created_at"]}, 200
 
 #essential to make sure all file code only gets executed when you specifically execute it
 
