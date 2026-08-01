@@ -233,6 +233,34 @@ def logout():
     return {"message": "logout successful"}, 200
 
 
+@app.route("/api/admin/users")
+def getusers():
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return {"error": "permission denied"}, 401
+    token = auth_header.replace("Bearer ", "")
+    user = get_user_from_token(token)
+    if not user:
+        return {"error": "permission denied, invalid token"}, 401
+
+    if user["role"] != "admin":
+        return {"error": "permission denied"}, 403
+    
+    db = get_connection()
+    users = db.execute("select * from users").fetchall()
+    db.close()
+    if not users:
+        return {"users": users}, 200
+    # 1 bob user 
+    # 2 alice user
+    # 3 jake admin 
+    output = []
+    for user in users:
+        output.append({"username": user["username"], "id": user["id"], "role": user["role"], "created_at": user["created_at"]})
+    return {"message": "success", "users": output}, 200
+
+
+
 #essential to make sure all file code only gets executed when you specifically execute it
 
 if __name__ == '__main__':
