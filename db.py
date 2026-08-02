@@ -27,4 +27,10 @@ def get_user_from_token(token):
 	user = db.execute("select * from users where id = ?", (token_row["user_id"],)).fetchone()
 	db.close()
 	return user
-	
+
+#log specific events. login successes and failures, authorization failures and successes 403s, 500s and repeated errors
+def log_event(event_type, user_id=None, username=None, details=None, endpoint=None, source_ip=None):
+	db = get_connection()
+	db.execute("insert into security_events (event_type, user_id, username, details, endpoint, source_ip) values (?,?,?,?,?,?)", (event_type, user_id,username,details,endpoint,source_ip,))
+	db.commit()
+	db.close()

@@ -1,7 +1,7 @@
 import requests
 
 BASE = "http://127.0.0.1:5000"
-users = ["bob", "alice", "jake"]
+users = ["bob", "alice", "jake", "joey", "bill"]
 
 for username in users:
     resp = requests.post(f"{BASE}/api/login", json={"username": username, "password": "password"})

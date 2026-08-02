@@ -1,7 +1,7 @@
 from flask import Flask, request
 import bcrypt
 import sqlite3
-from db import get_connection, get_user_by_username, get_user_from_token
+from db import get_connection, get_user_by_username, get_user_from_token, log_event
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -64,7 +64,9 @@ def login():
         #bcrypt takes a noticeable amount of time to run so for it to run when there is a valid user account but not when there is not valid user account
         #is a telling sign to attackers that this user account exists but the password is wrong
         bcrypt.checkpw(password.encode('utf-8'), DUMMY_HASH.encode('utf-8'))
+        log_event(event_type="login_failure", username=username, details="user account doesn't exist", endpoint="/api/login", source_ip=request.remote_addr)
         return {"error": "invalid credentials"}, 401
+    
     
     
     #if this returns true 
@@ -75,8 +77,10 @@ def login():
         db.execute("insert into tokens (token, user_id, expires_at) values (?,?,?)", (token, user["id"], expires_at,))
         db.commit()
         db.close()
+        log_event(event_type="login_success", user_id=user["id"], username=user["username"], details="successful login", endpoint="/api/login", source_ip=request.remote_addr)
         return {"token": token}, 200
     else:
+        log_event(event_type="login_failure",user_id=user["id"],username=user["username"], details="failed login", endpoint="/api/login", source_ip=request.remote_addr)
         return{"error": "invalid credentials"}, 401
     
 
