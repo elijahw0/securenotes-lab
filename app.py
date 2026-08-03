@@ -147,15 +147,19 @@ def getspecificnote(note_id):
     user = get_user_from_token(token)
     if not user:
         return {"error": "permission denied, invalid token"}, 401
-    #after we verified this user exists, then check to see if they can access that specific note, if it exists, before returning it
-    owner_id = user["id"]
+
     db = get_connection()
-    note = db.execute("select * from notes where id = ?", (note_id,)).fetchone()
+    note = db.execute("select * from notes where id = ? and owner_id = ?", (note_id, user["id"])).fetchone()
     db.close()
-    if note is None or note["owner_id"] != owner_id:
+
+    if note is None:
+        log_event(event_type="note_access_denied", user_id=user["id"], username=user["username"],
+                  details=f"denied access to note {note_id}", endpoint=f"/api/notes/{note_id}",
+                  source_ip=request.remote_addr)
         return {"error": "no note found"}, 404
-    else:
-        return {"message": "note retrieved", "note_id": note["id"], "note_title": note["title"], "note_body": note["body"], "creation_date": note["created_at"]}, 200
+
+    return {"message": "note retrieved", "note_id": note["id"], "note_title": note["title"],
+            "note_body": note["body"], "creation_date": note["created_at"]}, 200
 
 
 #endpoint to update a note. must validate user token that they are a vlaid user. Must check if the note number they passed belongs to them
@@ -171,29 +175,23 @@ def updatenote(note_id):
     if not user:
         return {"error": "permission denied, invalid token"}, 401
 
-    owner_id = user["id"]
     edits = request.get_json()
     if not edits:
         return {"error": "no fields provided to update"}, 400
 
     db = get_connection()
-    # fetch the existing note
-    existing = db.execute(
-        "select * from notes where id = ? and owner_id = ?",
-        (note_id, owner_id),
-    ).fetchone()
+    existing = db.execute("select * from notes where id = ? and owner_id = ?", (note_id, user["id"])).fetchone()
     if existing is None:
         db.close()
+        log_event(event_type="note_access_denied", user_id=user["id"], username=user["username"],
+                  details=f"denied edit to note {note_id}", endpoint=f"/api/notes/{note_id}",
+                  source_ip=request.remote_addr)
         return {"error": "no note found"}, 404
 
-    #use the client's value if they provided the key, else keep the existing value
     new_title = edits["title"] if "title" in edits else existing["title"]
     new_body = edits["body"] if "body" in edits else existing["body"]
-
-    db.execute(
-        "update notes set title = ?, body = ? where id = ? and owner_id = ?",
-        (new_title, new_body, note_id, owner_id),
-    )
+    db.execute("update notes set title = ?, body = ? where id = ? and owner_id = ?",
+               (new_title, new_body, note_id, user["id"]))
     db.commit()
     db.close()
     return {"message": "note updated"}, 200
@@ -207,15 +205,17 @@ def deletenote(note_id):
     user = get_user_from_token(token)
     if not user:
         return {"error": "permission denied, invalid token"}, 401
-    
-    owner_id = user["id"]
-    #check if the selected note exists, check if it belongs to them, delete note
+
     db = get_connection()
-    cursor = db.execute("delete from notes where id = ? and owner_id = ?", (note_id, owner_id,))
+    cursor = db.execute("delete from notes where id = ? and owner_id = ?", (note_id, user["id"]))
     db.commit()
     db.close()
+
     if cursor.rowcount == 0:
-        return {"error": "note not found"}, 404
+        log_event(event_type="note_access_denied", user_id=user["id"], username=user["username"],
+                  details=f"denied delete of note {note_id}", endpoint=f"/api/notes/{note_id}",
+                  source_ip=request.remote_addr)
+        return {"error": "no note found"}, 404
     return {"message": "note successfully deleted"}, 200
 
 @app.route("/api/logout", methods=["POST"])
