@@ -245,18 +245,21 @@ def getusers():
     token = auth_header.replace("Bearer ", "")
     user = get_user_from_token(token)
 
-    if user["role"] != "admin":
-        return {"error": "permission denied"}, 403
-
     if not user:
         return {"error": "permission denied, invalid token"}, 401
+    
+    if user["role"] != "admin":
+        log_event(event_type="authorization_failure", user_id=user["id"], username=user["username"], details=f"{user['username']} tried to access all users but is not admin", endpoint="/api/admin/users", source_ip=request.remote_addr)
+        return {"error": "permission denied", "message": "this will be reported"}, 403
     
     db = get_connection()
     users = db.execute("select * from users").fetchall()
     db.close()
     output = []
-    for user in users:
-        output.append({"username": user["username"], "id": user["id"], "role": user["role"], "created_at": user["created_at"]})
+    for the_user in users:
+        output.append({"username": the_user["username"], "id": the_user["id"], "role": the_user["role"], "created_at": the_user["created_at"]})
+
+    log_event(event_type="authorization_success", user_id=user["id"], username= user["username"], details=f"{user['username']} accessed all users", endpoint="/api/admin/users", source_ip=request.remote_addr)
     return {"message": "success", "users": output}, 200
 
 @app.route("/api/users/<int:user_id>")
@@ -272,10 +275,13 @@ def getuser(user_id):
     db = get_connection()
     selected_user = db.execute("select * from users where id = ?", (user_id,)).fetchone()
     db.close()
+    if user["role"] != "admin":
+        log_event(event_type="authorization_failure", user_id=user["id"], username= user["username"], details=f"{user['username']} tried to access {user_id} but is not admin", endpoint=f"/api/users/{user_id}", source_ip=request.remote_addr)
+        return {"error": "permission denied", "message": "this will be reported"},403
     if not selected_user:
         return {"error": "user not found"},404
-    if user["role"] != "admin":
-        return {"error": "permission denied"},403
+
+    log_event(event_type="authorization_success", user_id=user["id"], username= user["username"], details=f"{user['username']} accessed {user_id}", endpoint=f"/api/users/{user_id}", source_ip=request.remote_addr)
     return {"username": selected_user["username"], "role": selected_user["role"], "id": selected_user["id"], "created_at": selected_user["created_at"]}, 200
 
 #essential to make sure all file code only gets executed when you specifically execute it
