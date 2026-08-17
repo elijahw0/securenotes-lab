@@ -125,9 +125,9 @@ All seeded data is synthetic. No real credentials are used anywhere.
 The baseline above is phase one. The project continues in deliberately-separated branches so that a `git diff` cleanly shows each vulnerability and each fix:
 
 - **`baseline`** *(current)* — secure, functional API.
-- **`vulnerable`** *(planned)* — introduce OWASP API Top 10 issues one at a time: SQL injection, broken object-level authorization (IDOR), broken authentication, mass assignment, verbose errors / information disclosure, security misconfiguration, and more.
-- **`hardened`** *(planned)* — remediate each finding, with before/after evidence.
-- **`testing`** *(planned)* — exploit and regression scripts that run against both the vulnerable and hardened versions to demonstrate that attacks succeed before hardening and are blocked after.
+- **`vulnerable`** *(coming soon)* — introduce OWASP API Top 10 issues one at a time: SQL injection, broken object-level authorization (IDOR), broken authentication, mass assignment, verbose errors / information disclosure, security misconfiguration, and more.
+- **`hardened`** *(coming soon)* — remediate each finding, with before/after evidence.
+- **`testing`** *(coming soon)* — exploit and regression scripts that run against both the vulnerable and hardened versions to demonstrate that attacks succeed before hardening and are blocked after.
 
 Also planned: request/error logging expansion, a lightweight threat model, automated functional and security-regression tests, baseline security scans (Bandit, pip-audit, OWASP ZAP), and containerization for isolation.
 
