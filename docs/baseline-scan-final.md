@@ -164,6 +164,6 @@ Authenticated API scanning is deferred to the `vulnerable` branch, where an Open
 
 The four ZAP header findings are still open. CSP and Permissions-Policy control browser behavior and this API is not browser-facing, so the practical risk is limited, but I am recording them as outstanding instead of dismissing them. They are candidates for the `hardened` branch.
 
-The baseline works as a secure control. The bigger caveat is coverage rather than findings, since no authenticated dynamic testing happened and static analysis cannot evaluate the authorization logic this lab is built to demonstrate.
+The baseline works as a secure control. The bigger issue is coverage rather than findings, since no authenticated dynamic testing happened and static analysis cannot evaluate the authorization logic this lab is built to demonstrate.
 
 **Next:** write an OpenAPI 3.0 spec for all 12 endpoints so `zap-api-scan.py` can authenticate and scan the actual API surface.
