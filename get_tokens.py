@@ -1,6 +1,8 @@
 import requests
+import os
 
-BASE = "http://127.0.0.1:5000"
+PORT = os.environ.get("PORT", "5000")
+BASE = f"http://127.0.0.1:{PORT}"
 users = ["bob", "alice", "jake", "joey", "bill"]
 
 for username in users:

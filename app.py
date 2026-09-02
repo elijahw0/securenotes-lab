@@ -1,4 +1,5 @@
-from flask import Flask, request
+from flask import Flask, request, g
+from functools import wraps
 import bcrypt
 import sqlite3
 from db import get_connection, get_user_by_username, get_user_from_token, log_event
@@ -10,6 +11,35 @@ import os
 app = Flask(__name__)
 dummypass= 'password' # nosec B105
 DUMMY_HASH = bcrypt.hashpw(dummypass.encode('utf-8'), bcrypt.gensalt()).decode("utf-8")
+
+#authentication decorator. wraps protected endpoints so token validation happens
+#before the route function runs at all. pass role= to also require a specific role.
+#on success the authenticated user is on g.user and the raw token on g.token
+def require_auth(role=None):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            auth_header = request.headers.get("Authorization")
+            if not auth_header:
+                return {"error": "permission denied"}, 401
+
+            token = auth_header.removeprefix("Bearer ").strip()
+            user = get_user_from_token(token)
+            if not user:
+                return {"error": "permission denied, invalid token"}, 401
+
+            if role and user["role"] != role:
+                log_event(event_type="authorization_failure", user_id=user["id"],
+                          username=user["username"],
+                          details=f"{user['username']} tried to access {request.path} but is not {role}",
+                          endpoint=request.path, source_ip=request.remote_addr)
+                return {"error": "permission denied", "message": "this will be reported"}, 403
+
+            g.user = user
+            g.token = token
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 #capturing http requests that go to the /health endpoint and running health function
@@ -86,25 +116,18 @@ def login():
     
 
 @app.route("/api/profile", methods=["GET"])
+@require_auth()
 def profile():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied"}, 401
+
+    user = g.user
     return {"id": user["id"], "username": user["username"], "role": user["role"]}, 200
 
 @app.route("/api/notes", methods=["GET"])
+@require_auth()
 def getnotes():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
+
+    user = g.user
+    
     db = get_connection()
     owner_id = user['id']
     user_notes = db.execute("select * from notes where owner_id = ?", (owner_id,)).fetchall()
@@ -117,14 +140,10 @@ def getnotes():
     
 
 @app.route('/api/notes', methods=['POST'])
+@require_auth()
 def createnotes():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
+
+    user = g.user   
     db = get_connection()
     #if json isnt properly parsed it will assign None to data
     data = request.get_json(silent=True)
@@ -140,14 +159,11 @@ def createnotes():
     return {"message": "note created", "note_id": new_id, "title": title, "body": body}, 201
 
 @app.route("/api/notes/<int:note_id>", methods=["GET"])
+@require_auth()
 def getspecificnote(note_id):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
+
+    user = g.user
+
 
     db = get_connection()
     note = db.execute("select * from notes where id = ? and owner_id = ?", (note_id, user["id"])).fetchone()
@@ -167,15 +183,11 @@ def getspecificnote(note_id):
 #if they own it, capture the edits they want and replace it. commit and close connection
 #uses patch behavior instead of true put. if they desire to only update one field, their existing other field remains
 @app.route("/api/notes/<int:note_id>", methods=["PUT"])
+@require_auth()
 def updatenote(note_id):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
-
+    
+    user = g.user
+   
     edits = request.get_json()
     if not edits:
         return {"error": "no fields provided to update"}, 400
@@ -198,14 +210,9 @@ def updatenote(note_id):
     return {"message": "note updated"}, 200
 
 @app.route("/api/notes/<int:note_id>", methods=["DELETE"])
+@require_auth()
 def deletenote(note_id):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
+    user = g.user
 
     db = get_connection()
     cursor = db.execute("delete from notes where id = ? and owner_id = ?", (note_id, user["id"]))
@@ -220,17 +227,12 @@ def deletenote(note_id):
     return {"message": "note successfully deleted"}, 200
 
 @app.route("/api/logout", methods=["POST"])
+@require_auth()
 def logout():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
+    user = g.user
 
     db = get_connection()
-    cursor = db.execute("delete from tokens where token = ? and user_id = ?", (token, user["id"]))
+    cursor = db.execute("delete from tokens where token = ? and user_id = ?", (g.token, user["id"]))
     db.commit()
     db.close()
     if cursor.rowcount == 0:
@@ -239,19 +241,10 @@ def logout():
 
 
 @app.route("/api/admin/users")
+@require_auth(role="admin")
 def getusers():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
 
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
-    
-    if user["role"] != "admin":
-        log_event(event_type="authorization_failure", user_id=user["id"], username=user["username"], details=f"{user['username']} tried to access all users but is not admin", endpoint="/api/admin/users", source_ip=request.remote_addr)
-        return {"error": "permission denied", "message": "this will be reported"}, 403
+    user = g.user
     
     db = get_connection()
     users = db.execute("select * from users").fetchall()
@@ -264,19 +257,10 @@ def getusers():
     return {"message": "success", "users": output}, 200
 
 @app.route("/api/users/<int:user_id>")
+@require_auth(role="admin")
 def getuser(user_id):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return {"error": "permission denied"}, 401
-    token = auth_header.replace("Bearer ", "")
-    user = get_user_from_token(token)
-    if not user:
-        return {"error": "permission denied, invalid token"}, 401
-    
 
-    if user["role"] != "admin":
-        log_event(event_type="authorization_failure", user_id=user["id"], username= user["username"], details=f"{user['username']} tried to access {user_id} but is not admin", endpoint=f"/api/users/{user_id}", source_ip=request.remote_addr)
-        return {"error": "permission denied", "message": "this will be reported"},403
+    user = g.user
     
     db = get_connection()
     selected_user = db.execute("select * from users where id = ?", (user_id,)).fetchone()

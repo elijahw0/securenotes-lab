@@ -7,10 +7,11 @@ db=get_connection()
 db.execute('delete from tokens')
 db.execute("delete from notes")
 db.execute("delete from users")
+db.commit()
 
 
 userids ={}
-users = [('bob','password', 'user'), ('alice', 'password', 'user'), ('jake', 'password', 'admin')]
+users = [('bob','password', 'user'), ('alice', 'password', 'user'), ('jake', 'password', 'admin'), ('joey', 'password', 'user'), ('bill', 'password', 'admin')]
 for username, password, role in users:
 	cursor = db.execute("insert into users (username, password_hash, role) values (?, ?, ?)", (username, bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'), role))
 	userids[username] = cursor.lastrowid
