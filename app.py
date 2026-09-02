@@ -8,7 +8,7 @@ import os
 
 #creating the app. flask can now see this script and act on it
 app = Flask(__name__)
-dummypass= 'password'
+dummypass= 'password' # nosec B105
 DUMMY_HASH = bcrypt.hashpw(dummypass.encode('utf-8'), bcrypt.gensalt()).decode("utf-8")
 
 
@@ -230,7 +230,7 @@ def logout():
         return {"error": "permission denied, invalid token"}, 401
 
     db = get_connection()
-    cursor = db.execute("delete from tokens where token = ?", (token,))
+    cursor = db.execute("delete from tokens where token = ? and user_id = ?", (token, user["id"]))
     db.commit()
     db.close()
     if cursor.rowcount == 0:
@@ -273,12 +273,15 @@ def getuser(user_id):
     if not user:
         return {"error": "permission denied, invalid token"}, 401
     
-    db = get_connection()
-    selected_user = db.execute("select * from users where id = ?", (user_id,)).fetchone()
-    db.close()
+
     if user["role"] != "admin":
         log_event(event_type="authorization_failure", user_id=user["id"], username= user["username"], details=f"{user['username']} tried to access {user_id} but is not admin", endpoint=f"/api/users/{user_id}", source_ip=request.remote_addr)
         return {"error": "permission denied", "message": "this will be reported"},403
+    
+    db = get_connection()
+    selected_user = db.execute("select * from users where id = ?", (user_id,)).fetchone()
+    db.close()
+    
     if not selected_user:
         return {"error": "user not found"},404
 
