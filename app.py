@@ -166,7 +166,8 @@ def getspecificnote(note_id):
 
 
     db = get_connection()
-    note = db.execute("select * from notes where id = ? and owner_id = ?", (note_id, user["id"])).fetchone()
+    #IDOR vulnerability. Doesn't check if user owns that specific note
+    note = db.execute("select * from notes where id = ? ", (note_id,)).fetchone()
     db.close()
 
     if note is None:
@@ -193,7 +194,7 @@ def updatenote(note_id):
         return {"error": "no fields provided to update"}, 400
 
     db = get_connection()
-    existing = db.execute("select * from notes where id = ? and owner_id = ?", (note_id, user["id"])).fetchone()
+    existing = db.execute("select * from notes where id = ?", (note_id,)).fetchone()
     if existing is None:
         db.close()
         log_event(event_type="note_access_denied", user_id=user["id"], username=user["username"],
@@ -203,8 +204,8 @@ def updatenote(note_id):
 
     new_title = edits["title"] if "title" in edits else existing["title"]
     new_body = edits["body"] if "body" in edits else existing["body"]
-    db.execute("update notes set title = ?, body = ? where id = ? and owner_id = ?",
-               (new_title, new_body, note_id, user["id"]))
+    db.execute("update notes set title = ?, body = ? where id = ?",
+               (new_title, new_body, note_id))
     db.commit()
     db.close()
     return {"message": "note updated"}, 200
@@ -215,7 +216,7 @@ def deletenote(note_id):
     user = g.user
 
     db = get_connection()
-    cursor = db.execute("delete from notes where id = ? and owner_id = ?", (note_id, user["id"]))
+    cursor = db.execute("delete from notes where id = ?", (note_id, ))
     db.commit()
     db.close()
 

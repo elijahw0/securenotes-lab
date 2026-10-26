@@ -4,6 +4,7 @@ import os
 PORT = os.environ.get("PORT", "5000")
 BASE = f"http://127.0.0.1:{PORT}"
 users = ["bob", "alice", "jake", "joey", "bill"]
+#admins: bill, jake
 
 for username in users:
     resp = requests.post(f"{BASE}/api/login", json={"username": username, "password": "password"}, timeout=10) # nosec B105 # seeded lab credential, matches seed.py; not a production secret
