@@ -17,4 +17,6 @@ for i in range(1,4):
         print(f"Note {i}: {request.json()}")
     else:
         print(f"Note {i}: {request.status_code}")
+        
 
+sys.exit(1)
