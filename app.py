@@ -242,7 +242,7 @@ def logout():
 
 
 @app.route("/api/admin/users")
-@require_auth(role="admin")
+@require_auth()
 def getusers():
 
     user = g.user
