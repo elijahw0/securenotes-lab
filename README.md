@@ -1,3 +1,4 @@
+# VULNERABLE BRANCH 
 # SecureNotes Lab
 
 > ** Work in progress & intentionally vulnerable by design.** This is a hands-on security-education project. The current `baseline` branch is a secure implementation. Later branches will deliberately introduce and then remediate OWASP API Top 10 vulnerabilities for study. Nothing here is production software, and the planned vulnerable branches are intentional and educational.
