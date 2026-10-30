@@ -230,14 +230,7 @@ def deletenote(note_id):
 @app.route("/api/logout", methods=["POST"])
 @require_auth()
 def logout():
-    user = g.user
 
-    db = get_connection()
-    cursor = db.execute("delete from tokens where token = ? and user_id = ?", (g.token, user["id"]))
-    db.commit()
-    db.close()
-    if cursor.rowcount == 0:
-        return {"error": "logout failed"}, 400
     return {"message": "logout successful"}, 200
 
 
