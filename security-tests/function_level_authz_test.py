@@ -15,7 +15,7 @@ if request.status_code == 200:
     print(users)
     for user in users:
         print(f"User: {user['username']}, Role: {user['role']}")
-    sys.exit(0)
+    sys.exit(1)
 else:
     print(f"Failed to retrieve users: {request.status_code}")
-    sys.exit(1)
+    sys.exit(0)

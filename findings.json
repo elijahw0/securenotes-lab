@@ -1,0 +1,39 @@
+[
+  {
+    "id": "SN-001",
+    "title": "IDOR on note endpoints",
+    "owasp_category": "API1:2023 Broken Object Level Authorization",
+    "severity": "high",
+    "endpoint": "GET/PUT/DELETE /api/notes/<id>",
+    "status": "open",
+    "root_cause": "Note queries do not check owner_id, so any authenticated user can read, edit, or delete any note by changing the ID.",
+    "fix": "Add 'and owner_id = ?' to every note query; return 404 so note IDs can't be enumerated.",
+    "test": "security-tests/idor_test.py"
+  },
+  
+  {
+    "id": "SN-002",
+    "title": "Broken Function Level Authorization",
+    "owasp_category": "API5:2023 Broken Function Level Authorization",
+    "severity": "medium",
+    "endpoint": "GET /api/admin/users",
+    "status": "open",
+    "root_cause": "API allows users to view all registered users without proper authorization checks. A normal user can visit the admin endpoint that allows an admin to view all registered users.",
+    "fix": "Require the admin role on admin endpoints with @require_auth(role='admin'), returning 403 and logging the attempt.",
+    "test": "security-tests/function_level_authz_test.py"
+  },
+
+  {
+    "id": "SN-003",
+    "title": "Broken Authentication on logout",
+    "owasp_category": "API2:2023 Broken Authentication",
+    "severity": "medium",
+    "endpoint": "POST /api/logout",
+    "status": "open",
+    "root_cause": "Logout does not invalidate the token, allowing reuse after logout. If an account is compromised, a logout should invalidate that session but doesn't so tokens are able to be reused.",
+    "fix": "Invalidate the token on logout by deleting it from the database.",
+    "test": "security-tests/broken_auth_test.py"
+  }
+  
+
+]
