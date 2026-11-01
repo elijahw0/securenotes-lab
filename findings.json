@@ -30,9 +30,20 @@
     "severity": "medium",
     "endpoint": "POST /api/logout",
     "status": "open",
-    "root_cause": "Logout does not invalidate the token, allowing reuse after logout. If an token is stolen, a logout should invalidate that session but doesn't so tokens are able to be reused.",
+    "root_cause": "Logout does not invalidate the token, allowing reuse after logout. If a token is stolen, a logout should invalidate that session but doesn't so tokens are able to be reused.",
     "fix": "Invalidate the token on logout by deleting it from the database.",
     "test": "security-tests/broken_auth_test.py"
+  },
+  {
+    "id": "SN-004",
+    "title": "Excessive data exposure",
+    "owasp_category": "API3:2023 Broken Object Property Level Authorization",
+    "severity": "high",
+    "endpoint": "GET /api/admin/users",
+    "status": "open",
+    "root_cause": "The endpoint returns every column of each user row instead of an explicit set of fields, so password hashes are included in the response. If combined with flaw 2, a normal user could exploit this to gain access to sensitive information.",
+    "fix": "Return specific fields (username, id, role, created_at) instead of the whole row.",
+    "test": "security-tests/broken_object_property_level_test.py"
   }
   
 

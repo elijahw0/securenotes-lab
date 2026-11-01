@@ -243,12 +243,11 @@ def getusers():
     db = get_connection()
     users = db.execute("select * from users").fetchall()
     db.close()
-    output = []
-    for the_user in users:
-        output.append({"username": the_user["username"], "id": the_user["id"], "role": the_user["role"], "created_at": the_user["created_at"]})
-
+    
+    print(users)
+    users = [dict(the_user) for the_user in users]
     log_event(event_type="authorization_success", user_id=user["id"], username= user["username"], details=f"{user['username']} accessed all users", endpoint="/api/admin/users", source_ip=request.remote_addr)
-    return {"message": "success", "users": output}, 200
+    return {"message": "success", "users": users}, 200
 
 @app.route("/api/users/<int:user_id>")
 @require_auth(role="admin")
