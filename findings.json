@@ -30,7 +30,7 @@
     "severity": "medium",
     "endpoint": "POST /api/logout",
     "status": "open",
-    "root_cause": "Logout does not invalidate the token, allowing reuse after logout. If an account is compromised, a logout should invalidate that session but doesn't so tokens are able to be reused.",
+    "root_cause": "Logout does not invalidate the token, allowing reuse after logout. If an token is stolen, a logout should invalidate that session but doesn't so tokens are able to be reused.",
     "fix": "Invalidate the token on logout by deleting it from the database.",
     "test": "security-tests/broken_auth_test.py"
   }
