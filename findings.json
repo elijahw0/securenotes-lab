@@ -43,7 +43,7 @@
     "status": "open",
     "root_cause": "The endpoint returns every column of each user row instead of an explicit set of fields, so password hashes are included in the response. If combined with flaw 2, a normal user could exploit this to gain access to sensitive information.",
     "fix": "Return specific fields (username, id, role, created_at) instead of the whole row.",
-    "test": "security-tests/broken_object_property_level_test.py"
+    "test": "security-tests/excessive_data_exposure_test.py"
   }
   
 
