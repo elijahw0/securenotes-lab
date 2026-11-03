@@ -44,6 +44,17 @@
     "root_cause": "The endpoint returns every column of each user row instead of an explicit set of fields, so password hashes are included in the response. If combined with flaw 2, a normal user could exploit this to gain access to sensitive information.",
     "fix": "Return specific fields (username, id, role, created_at) instead of the whole row.",
     "test": "security-tests/excessive_data_exposure_test.py"
+  },
+  {
+    "id": "SN-005",
+    "title": "SQL-Injection in note search",
+    "owasp_category": "A03:2021 Injection (main OWASP Top 10)",
+    "severity": "high",
+    "endpoint": "GET /api/notes/search",
+    "status": "open",
+    "root_cause": "The query is inserted directly into the SQL query string with an f-string, so input is parsed as SQL rather than data.",
+    "fix": "Implement parameterized queries with ? and input validation to prevent SQL injection.",
+    "test": "security-tests/sql_injection_test.py"
   }
   
 
