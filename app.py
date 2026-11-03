@@ -265,6 +265,30 @@ def getuser(user_id):
     log_event(event_type="authorization_success", user_id=user["id"], username= user["username"], details=f"{user['username']} accessed {user_id}", endpoint=f"/api/users/{user_id}", source_ip=request.remote_addr)
     return {"username": selected_user["username"], "role": selected_user["role"], "id": selected_user["id"], "created_at": selected_user["created_at"]}, 200
 
+@app.route("/api/notes/search")
+@require_auth()
+def search_notes():
+    user = g.user
+
+    query = request.args.get("q", "").strip()
+
+    if not query or len(query) > 30:
+        return {"error": "missing query parameter or with max length 30"}, 400
+
+    text = query[:30]
+
+    
+    db = get_connection()
+    notes = db.execute("select id, title, body, created_at from notes where owner_id = ? and (title like ? or body like ?)",
+                       (user["id"], f"%{text}%", f"%{text}%")).fetchall()
+    db.close()
+
+    output = []
+    for note in notes:
+        output.append({"id": note["id"], "title": note["title"], "body": note["body"], "created_at": note["created_at"]})
+
+    return {"notes": output}, 200
+
 #essential to make sure all file code only gets executed when you specifically execute it
 
 if __name__ == '__main__':
