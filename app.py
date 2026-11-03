@@ -275,12 +275,15 @@ def search_notes():
     if not query or len(query) > 30:
         return {"error": "missing query parameter or with max length 30"}, 400
 
-    text = query[:30]
+    text = query
 
     
     db = get_connection()
-    notes = db.execute("select id, title, body, created_at from notes where owner_id = ? and (title like ? or body like ?)",
-                       (user["id"], f"%{text}%", f"%{text}%")).fetchall()
+    notes = db.execute(
+    f"select id, title, body, created_at from notes "
+    f"where owner_id = ? and (title like '%{text}%' or body like '%{text}%')",
+    (user["id"],)
+).fetchall()
     db.close()
 
     output = []
