@@ -26,3 +26,6 @@ jobs:
    
       - name: Run bandit SAST tool
         run: bandit -r app.py db.py seed.py
+ 
+      - name: Run secrets scan with gitleaks
+        uses: gitleaks/gitleaks-action@v2
