@@ -1,0 +1,27 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [baseline]
+  pull_request:
+    branches: [baseline]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dev tools
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pip-audit (dependency CVE scan)
+        run: pip-audit -r requirements.txt -r requirements-dev.txt
+
+
