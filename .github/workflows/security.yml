@@ -23,5 +23,6 @@ jobs:
 
       - name: Run pip-audit (dependency CVE scan)
         run: pip-audit -r requirements.txt -r requirements-dev.txt
-
-
+   
+      - name: Run bandit SAST tool
+        run: bandit -r app.py db.py seed.py
