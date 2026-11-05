@@ -244,7 +244,6 @@ def getusers():
     users = db.execute("select * from users").fetchall()
     db.close()
     
-    print(users)
     users = [dict(the_user) for the_user in users]
     log_event(event_type="authorization_success", user_id=user["id"], username= user["username"], details=f"{user['username']} accessed all users", endpoint="/api/admin/users", source_ip=request.remote_addr)
     return {"message": "success", "users": users}, 200
@@ -284,6 +283,7 @@ def search_notes():
     f"where owner_id = ? and (title like '%{text}%' or body like '%{text}%')",
     (user["id"],)
 ).fetchall()
+
     db.close()
 
     output = []
